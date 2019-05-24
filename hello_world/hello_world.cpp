@@ -1,4 +1,4 @@
-/**
+/*
  *The equivalent of hello world in computer graphics.
  *Author: Pranav Rajan
  *Date: May 9, 2019

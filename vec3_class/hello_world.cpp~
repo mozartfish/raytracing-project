@@ -1,0 +1,15 @@
+/*
+ * Hello World in computer graphics
+ * Author: Pranav Rajan
+ * Date: May 24, 2019
+ */
+
+#include <iostream>
+#include "vec3.h"
+
+using namespace std;
+
+int main()
+{
+  cout << "Hello, World!" << endl;
+}
