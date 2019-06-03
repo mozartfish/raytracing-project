@@ -2,6 +2,12 @@
  *This is an abstract class that tells how the rays will interact with the surface. These interactions include lambertian (diffuse) shading, reflection etc. 
  *Author: Pranav Rajan
  *Date May 28, 2019
+ *Version 1.0
+ *
+ *Added in fuzz
+ *Author: Pranav Rajan
+ *Date: May 28, 2019
+ *Version 1.1
  */
 
 #ifndef MATERIALH
@@ -62,13 +68,13 @@ vec3 reflect(const vec3& v, const vec3& n)
 class metal : public material
 {
  public:
+  //Constructor with fuzz
   metal(const vec3& a, float f) : albedo(a)
   {
     if (f < 1)
     {
       fuzz = f;
     }
-
     else
     {
       fuzz = 1;
@@ -86,7 +92,7 @@ class metal : public material
   }
 
   vec3 albedo; // define the albedo vector
-  float fuzz; // define the fuzz
+  float fuzz; // define fuzz 
   
 };
 
