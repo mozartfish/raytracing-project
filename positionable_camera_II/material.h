@@ -12,6 +12,13 @@
  *Added in refraction for use with dielectrics
  *Author: Pranav Rajan
  *Date: June 3, 2019
+ *Version: 1.2
+ *
+ *Added in the Schlick Polynomial (used for approximating Fresnel Equation)
+ * for reflection and refraction for creating glass and other surfaces involving
+ * reflection and refraction
+ * Date: June 4, 2019
+ * Version 1.3
  */
 
 #ifndef MATERIALH
@@ -86,6 +93,17 @@ bool refract(const vec3& v, const vec3& n, float ni_over_nt, vec3& refracted)
   }
 }
 
+// Function for computing the Schlick Polynomial which is a substitute for
+// Fresnel's Equation for reflection and refraction
+float schlick(float cosine, float ref_idx)
+{
+  float r0 = (1 - ref_idx) / (1 + ref_idx);
+  r0 = r0 * r0;
+
+  return r0 + (1 - r0) * pow((1 - cosine), 5);
+}
+
+
 //Define dielectric effect
 class dielectric : public material
 {
@@ -97,36 +115,47 @@ class dielectric : public material
   //Scatter function that can be overriden by other classes or things that inherit from dielectrics
   virtual bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered) const
   {
-    vec3 outward_normal;
+    vec3 outward_normal; // the outward normal vector
     vec3 reflected = reflect(r_in.direction(), rec.normal);
     float ni_over_nt;
-    attenuation = vec3(1.0, 1.0, 1.0);
+    attenuation = vec3(1.0 ,1.0 ,1.0);
     vec3 refracted;
+    float reflect_prob; // variable to store reflection probability for sampling
+    float cosine;
 
     if (dot(r_in.direction(), rec.normal) > 0)
     {
       outward_normal = -rec.normal;
       ni_over_nt = ref_idx;
+      cosine = ref_idx * dot(r_in.direction(), rec.normal) / r_in.direction().length();
     }
     else
     {
       outward_normal = rec.normal;
       ni_over_nt = 1.0 / ref_idx;
+      cosine = -dot(r_in.direction(), rec.normal) / r_in.direction().length();
     }
     if (refract(r_in.direction(), outward_normal, ni_over_nt, refracted))
     {
-      scattered = ray(rec.p, refracted);
+      reflect_prob = schlick(cosine, ref_idx);
     }
     else
     {
       scattered = ray(rec.p, reflected);
-
-      return false;
+      reflect_prob = 1.0;
+    }
+    if (drand48() < reflect_prob)
+    {
+      scattered = ray(rec.p, reflected);
+    }
+    else
+    {
+      scattered = ray(rec.p, refracted);
     }
 
     return true;
   }
-
+  
   float ref_idx; // a vector for the refraction index for snell's law
 };
 

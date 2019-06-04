@@ -1,7 +1,7 @@
 /*
- *This program draws multiple objects with diffuse shading (matte shading)
+ *This program draws multiple objects with metallic shading, reflections etc.
  *Author: Pranav Rajan
- *Date: May 27, 2019
+ *Date: May 28, 2019
  */
 
 #include <iostream>
@@ -9,29 +9,26 @@
 #include "hitable_list.h"
 #include "float.h"
 #include "camera.h"
+#include "material.h"
 
-//Define a function for diffusion effect
-vec3 random_in_unit_sphere()
-{
-  vec3 p; // hitpoint vector
-
-  do
-  {
-    p = 2.0 * vec3(drand48(), drand48(), drand48()) - vec3(1, 1, 1);
-  }
-  while (p.squared_length() >= 1.0);
-
-  return p;
-}
 //Define a color vector function for rendering the scene
-vec3 color(const ray& r, hitable *world)
+vec3 color(const ray& r, hitable *world, int depth)
 {
-  hit_record rec; // define a record of all the hitable objects
+  hit_record rec; // new hit record object
 
-  if (world->hit(r, 0.0, MAXFLOAT, rec))
+  if (world->hit(r, 0.001, MAXFLOAT, rec))
   {
-    vec3 target = rec.p + rec.normal + random_in_unit_sphere();
-    return 0.5 * color(ray(rec.p, target - rec.p), world);
+    ray scattered; 
+    vec3 attenuation;
+
+    if (depth < 50 && rec.mat_ptr->scatter(r, rec, attenuation, scattered))
+    {
+      return attenuation * color(scattered, world, depth + 1);
+    }
+    else
+    {
+      return vec3(0, 0, 0);
+    }
   }
   else
   {
@@ -55,12 +52,17 @@ int main()
 
   std::cout << "P3\n" << nx << " " << ny << "\n255\n";
 
-  hitable *list[2]; //define a list of hitable objects
+  hitable *list[5]; //define a list of hitable objects
 
-  list[0] = new sphere(vec3(0, 0, -1), 0.5);
-  list[1] = new sphere(vec3(0, -100.5, -1), 100);
-  hitable *world = new hitable_list(list, 2); // create a new image world
-  camera cam; // define a new camera object
+  list[0] = new sphere(vec3(0, 0, -1), 0.5, new lambertian(vec3(0.1, 0.2, 0.5)));
+  list[1] =new sphere(vec3(0, -100.5, -1), 100, new lambertian(vec3(0.8, 0.8, 0.0)));
+  list[2] = new sphere(vec3(1, 0, -1), 0.5, new metal(vec3(0.8, 0.6, 0.2), 1.0));
+  list[3] = new sphere(vec3(-1, 0, -1), 0.5, new dielectric(1.5));
+  list[4] = new sphere(vec3(-1, 0, -1), -0.45, new dielectric(1.5));
+
+  
+  hitable *world = new hitable_list(list, 5); // create a new image world
+  camera cam(vec3(-2 ,2, 1), vec3(0, 0, -1), vec3(0, 1, 0), 90, float(nx) / float(ny)); // define a new camera object
 
   for (int j = ny - 1; j >= 0; j--)
   {
@@ -75,7 +77,7 @@ int main()
 	float v = float(j + drand48()) / float(ny);
 	ray r = cam.get_ray(u, v);
 	vec3 p = r.point_at_parameter(2.0);
-	col += color(r, world);
+	col += color(r, world, 0);
       }
 
       col /= float(ns); // subdivide the col into subdivisions based on the number of samples
